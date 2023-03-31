@@ -1,66 +1,87 @@
 from processSequences import *
-from count_sites import *
 import matplotlib.pyplot as plt
-from insights import *
 import numpy as np
+from collections import Counter
 from Bio import SeqIO
+from scipy.optimize import curve_fit
 
-# Load the file containing read end positions (with duplicates)
-path = "Raw Hi-C/Processing Bam Files/chr1_plus.txt"
-read_end_positions = np.loadtxt(path, dtype=int)
+# Get actual digestions from Hi-C Experiment
+path = "C:/Users/lbjun/OneDrive/Documents/School/Di Pierro Lab/Restriction Site Accessibility/Data/4DNESPXW8XHY/4DNFIOJB13JQ_chr7_digestions.txt"
+digestions = np.loadtxt(path, dtype=int)
 
-# Load the file containing digestion positions
-path = "Raw Hi-C/Processing Bam Files/chr1_plus_digestedOnly.txt"
-digestion_positions = np.loadtxt(path, dtype=int)
+digestions_counter = Counter(digestions)
+digestions_binned = np.array(sorted(digestions_counter.items()))
+digestion_inds = digestions_binned[:, 0]
+digestion_freqs = digestions_binned[:, 1]
 
-bincount = 300
+print(digestion_inds[1:100])
+print(digestion_freqs[1:100])
 
-fig, [ax1, ax2, ax3] = plt.subplots(3)
-fig.tight_layout(pad=2)
+digestion_count = len(digestions)
+print("Digestions: " + str(digestion_count))
+digested_site_count = len(digestions_counter.keys())
+print("Digested site count: " + str(digested_site_count))
 
-site_distribution(ax1, read_end_positions, bincount=bincount)
-ax1.set_title("Read End Positions")
-
-site_distribution(ax2, digestion_positions, bincount=bincount)
-ax2.set_title("Digestion positions")
-
-# Normalize both arrays, divide one by the other, and plot the result
-ax3.set_title("Normalized")
-read_ends_binned, bins = np.histogram(read_end_positions, bins=bincount)
-digestions_binned, bins = np.histogram(digestion_positions, bins=bincount)
-y = np.divide(np.divide(read_ends_binned, np.max(read_ends_binned)), np.divide(digestions_binned, np.max(digestions_binned)))
-ax3.plot(bins[1:], y)
-ax3.set_ylim([0, 5])
-ax3.plot([bins[0], bins[len(bins)-1]], [1, 1], linestyle="dashed", color="black")
-
-print("Read end count: " + str(len(read_end_positions)))
-print("Digestion count: " + str(len(digestion_positions)))
-
-frequency = read_end_frequency(digestion_positions, max(read_end_positions))
-print("Max: " + str(np.max(frequency)))
-
-# Load the reference genome
-reference_path = "C:/Users/lbjun/OneDrive/Documents/School/Di Pierro Lab/Reference Genomes/ncbi-genomes-2023-03-14/GCA_000001405.15_GRCh38_genomic.fna"
-
-print("Loading reference genome")
-fasta_iterator = SeqIO.parse(open(reference_path), 'fasta')
+# Get the indices of restriction sites in the reference genome
+path = "C:/Users/lbjun/OneDrive/Documents/School/Di Pierro Lab/Reference Genomes/ncbi-genomes-2023-03-14/GCA_000001405.15_GRCh38_genomic.fna"
+print("Loading reference genome...")
+fasta_iterator = SeqIO.parse(open(path), 'fasta')
 reference = str(load_ref_by_id(fasta_iterator, 'CM000663.2').seq)
 
 print("Locating restriction sites")
 restriction_seq = "GATC"
-site_mask = site_instances(reference, restriction_seq)
+site_inds = site_instances(reference, restriction_seq)
 
-read_end_freq = read_end_frequency(read_end_positions, len(reference))
-freq = digestion_frequency(read_end_freq, site_mask)
+site_count = int(len(site_inds))
+print("Sites in reference genome: " + str(site_count))
+sites_digested_percentage = round(100 * digested_site_count / site_count, 2)
+print("Percentage of total sites digested: " + str(sites_digested_percentage) + "%")
+digestions_per_site = round(digestion_count / site_count, 2)
+print("Mean digestions per site: " + str(digestions_per_site))
+digestions_per_accessible = round(digestion_count / digested_site_count, 2)
+print("Mean digestions for sites digested at least once: " + str(digestions_per_accessible))
 
-print("Number of Digestions: " + str(np.sum(freq)))
-print(len(digestion_positions))
+digestions_not_in_ref = np.setdiff1d(digestion_inds - 1, site_inds)
+undigested_sites = np.setdiff1d(site_inds, digestion_inds - 1)
 
-# # Create a mask of restriction site positions
+pct_odd_digestions = 100 * round(len(digestions_not_in_ref) / digestion_count, 2)
+print("Percentage of digestions that did not appear in the reference genome: " + str(pct_odd_digestions))
+undigested_site_percentage = 100 * round(len(undigested_sites) / site_count, 2)
+print("Percentage of sites in the reference genome that were not digested: " + str(undigested_site_percentage))
+
+# mask = digestion_freqs > 50
+# print(mask)
+# filtered_digestion_freqs = digestion_freqs[not mask]
+counts, bins = np.histogram(digestion_freqs, bins=max(digestion_freqs) - min(digestion_freqs))
+
+# counts = np.insert(counts, 0, len(undigested_sites))
+# bins = np.insert(bins, 0, 0)
+
+
+print(len(undigested_sites))
+print(bins[0:5])
+print(counts[0:5])
+
+fig, ax = plt.subplots(1)
+
+# ax.bar(range(1,100), digestion_freqs[1:100])
+ax.stairs(counts, bins)
+
+# def exponential(x, alpha, beta):
+#     return beta * np.exp(-x/alpha)
 #
-
-# Get the frequency that each position in the reference genome was a read end
 #
+# x = bins[1:]
+# popt, pcov = curve_fit(exponential, x, counts, maxfev=6000000)
+# y = exponential(x, *popt)
+# ax.plot(x, y, color="navy", linestyle="dashed")
 
-# # Filter only for read ends at restriction sites
-# digestion_freq = digestion_frequency(read_end_freq, site_mask)
+# ax.set_xscale("log")
+ax.set_yscale("log")
+
+plt.show()
+# print(site_inds[1:100])
+# print(list(digestions_counter.keys())[1:100])
+print(digestion_freqs[1:100])
+
+
