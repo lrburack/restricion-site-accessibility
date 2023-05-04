@@ -3,10 +3,10 @@ import random
 import matplotlib.pyplot as plt
 from scipy.stats import binom
 
-dummy_sites = np.zeros(10000)
+dummy_sites = np.zeros(100000)
 p = 1 / len(dummy_sites)
 print(len(dummy_sites))
-iterations = 500000
+iterations = 1000000
 
 for i in range(0, iterations):
     dummy_sites[random.randrange(0, len(dummy_sites))] += 1
@@ -21,8 +21,10 @@ ax.plot(bins[1:], counts)
 # ax.set_xscale("log")
 # ax.set_yscale("log")
 x = range(0, 100)
+ax.set_xlabel("Number of Digestions")
+ax.set_ylabel("Frequency")
 
-ax.plot(x, binom.pmf(x, iterations, p), color='black')
+# ax.plot(x, binom.pmf(x, iterations, p), color='black')
 
 plt.show()
 

@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from collections import Counter
 
-path = "C:/Users/lbjun/OneDrive/Documents/School/Di Pierro Lab/Restriction Site Accessibility/Data/4DNESPXW8XHY/sorted_4DNFIOJB13JQ_readEnds.txt"
+path = "C:/Users/lbjun/OneDrive/Documents/School/Di Pierro Lab/Restriction Site Accessibility/Data/4DNESQWI9K2F/readEnds_plus_4DNFIHBDN5SX_chr7.txt"
 print("Reading file")
 read_end_seqs = np.loadtxt(path, dtype=str)
 print("Total read ends: " + str(len(read_end_seqs)))
@@ -40,4 +40,4 @@ print("Std (w/o GATC) " + str(np.std(freq[:-1])))
 print("GATC read end count: " + str(counter['GATC']))
 print("CTAG read end count (use as estimate for GATC shearing): " + str(counter['CTAG']))
 print("Estimated percentage of GATC at read end due to shearing: " + str(100 * counter['CTAG'] / counter['GATC']) + "%")
-print("Percentage of read ends with a GATC: " + str(100 * counter['GATC'] / np.sum(freq)) + "%")
+print("Percentage of read ends with a GATC: " + str(100 * counter['GATC'] / len(read_end_seqs)) + "%")

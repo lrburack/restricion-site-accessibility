@@ -6,6 +6,12 @@ from sklearn.metrics import r2_score
 from scipy.special import factorial
 
 
+def find_nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return array[idx]
+
+
 def bp_notation(num):
     units = ["bp", "kbp", "mbp"]
     unit = units[int(np.log10(num) // 3)]
